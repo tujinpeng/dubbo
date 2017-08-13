@@ -141,11 +141,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             thread.setName("DelayExportServiceThread");
             thread.start();
         } else {
+            // 暴露服务
             doExport();
         }
     }
     
     protected synchronized void doExport() {
+        // 提供方配置参数校验
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
         }
@@ -242,6 +244,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }
+        //暴露url服务
         doExportUrls();
     }
 

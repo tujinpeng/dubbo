@@ -121,7 +121,11 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     }
 
     @SuppressWarnings({ "unchecked", "deprecation" })
+    /**
+     * dubbo提供者服务初始化
+     */
 	public void afterPropertiesSet() throws Exception {
+        // 获取provider配置
         if (getProvider() == null) {
             Map<String, ProviderConfig> providerConfigMap = applicationContext == null ? null  : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);
             if (providerConfigMap != null && providerConfigMap.size() > 0) {
@@ -153,6 +157,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
+        // 获取application配置
         if (getApplication() == null
                 && (getProvider() == null || getProvider().getApplication() == null)) {
             Map<String, ApplicationConfig> applicationConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ApplicationConfig.class, false, false);
@@ -171,6 +176,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
+        // 获取module配置
         if (getModule() == null
                 && (getProvider() == null || getProvider().getModule() == null)) {
             Map<String, ModuleConfig> moduleConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ModuleConfig.class, false, false);
@@ -189,6 +195,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
+        // 获取注册中心register配置
         if ((getRegistries() == null || getRegistries().size() == 0)
                 && (getProvider() == null || getProvider().getRegistries() == null || getProvider().getRegistries().size() == 0)
                 && (getApplication() == null || getApplication().getRegistries() == null || getApplication().getRegistries().size() == 0)) {
@@ -205,6 +212,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
+        // 获取monitor配置
         if (getMonitor() == null
                 && (getProvider() == null || getProvider().getMonitor() == null)
                 && (getApplication() == null || getApplication().getMonitor() == null)) {
@@ -224,6 +232,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
+        // 获取dubbo协议protocol配置
         if ((getProtocols() == null || getProtocols().size() == 0)
                 && (getProvider() == null || getProvider().getProtocols() == null || getProvider().getProtocols().size() == 0)) {
             Map<String, ProtocolConfig> protocolConfigMap = applicationContext == null ? null  : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class, false, false);
@@ -246,6 +255,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 setPath(beanName);
             }
         }
+        // 若提供者服务配置延时,则新启DelayExportServiceThread线程sleep一段时间,在暴露服务;否则直接暴露服务
         if (! isDelay()) {
             export();
         }
