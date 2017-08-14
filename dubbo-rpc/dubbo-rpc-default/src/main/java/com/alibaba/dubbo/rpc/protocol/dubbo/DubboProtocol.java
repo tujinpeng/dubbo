@@ -250,6 +250,9 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        /**
+         * 开启nettyServer端boss,worker线程组
+         */
         openServer(url);
         
         return exporter;

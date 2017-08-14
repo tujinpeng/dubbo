@@ -488,6 +488,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         }
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
 
+                        /**
+                         * 真正暴露服务的地方(装饰器模式 ? RegistryProtocol.export-->DubboProtocol.export)
+                         * RegistryProtocol负责将服务url注册到注册中心中;
+                         * DubboProtocol负责启动netty服务器server,监听客户端远程调用;同时将暴露的export注册到exporterMap中;
+                         *
+                         */
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }
