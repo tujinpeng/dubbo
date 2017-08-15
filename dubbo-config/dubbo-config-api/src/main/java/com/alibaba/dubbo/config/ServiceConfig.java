@@ -489,10 +489,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
 
                         /**
-                         * 真正暴露服务的地方(装饰器模式 ? RegistryProtocol.export-->DubboProtocol.export)
-                         * RegistryProtocol负责将服务url注册到注册中心中;
-                         * DubboProtocol负责启动netty服务器server,监听客户端远程调用;同时将暴露的export注册到exporterMap中;
-                         *
+                         * 真正暴露服务的地方：
+                         * 1。这里的protocol是一个自定义的适配对象由ExtensionLoader扩展点框架负责生成，有两个方法：
+                         *      export（invoker）: 根据AbstractProxyInvoker的url里的protocol的值extName，调用ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName)获取包装的协议对象
+                         *      refer(invoker):
+                         * 2.protocol包装的结果（装饰器模式  ProtocolFilterWrapper->ProtocolListenerWrapper->RegistryProtocol-->ProtocolFilterWrapper->ProtocolListenerWrapper->DubboProtocol）
+                         * 3.RegistryProtocol负责将服务url注册到注册中心中;
+                         * 4.DubboProtocol将暴露的export注册到exporterMap中；同时负责启动netty服务器server,监听客户端远程调用，然后调用相应的export;
                          */
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
