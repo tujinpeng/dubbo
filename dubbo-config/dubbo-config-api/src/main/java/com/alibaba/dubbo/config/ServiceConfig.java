@@ -496,6 +496,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                          * 2.protocol包装的结果（装饰器模式  ProtocolFilterWrapper->ProtocolListenerWrapper->RegistryProtocol-->ProtocolFilterWrapper->ProtocolListenerWrapper->DubboProtocol）
                          * 3.RegistryProtocol负责将服务url注册到注册中心中;
                          * 4.DubboProtocol将暴露的export注册到exporterMap中；同时负责启动netty服务器server,监听客户端远程调用，然后调用相应的export;
+                         * 5.ProtocolFilterWrapper负责获取provider的filters，创建invoker的chain责任链；
+                         * 6.ProtocolListenerWrapper负责当protocol调用完后，获取所有listeners，执行监听事件
+                         *
                          */
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
