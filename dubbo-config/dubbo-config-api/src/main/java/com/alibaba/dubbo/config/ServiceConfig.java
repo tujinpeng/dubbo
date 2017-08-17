@@ -58,6 +58,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private static final long   serialVersionUID = 3033787999037024738L;
 
+    /**
+     * 获取Protocol接口缺省的实现,获取步骤：
+     * 1.获取Protocol接口的扩展加载器ExtensionLoader
+     * 2.通过扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下com.alibaba.dubbo.rpc.Protocol文件，根据@Adaptive注解找到适配的实现
+     * 3.若没有设置Adaptive注解的实现，则自定义实现(Protocol$Adpative)
+     * 4.返回缺省的实现，同时用实现protocol接口的包装类ProtocolFilterWrapper，ProtocolListenerWrapper装饰返回
+     */
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
     
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();

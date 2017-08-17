@@ -105,6 +105,9 @@ public class ExtensionLoader<T> {
     }
     
     @SuppressWarnings("unchecked")
+    /**
+     * 根据类型，创建对应的类扩展器，放入缓存，下次直接从缓存取
+     */
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         if (type == null)
             throw new IllegalArgumentException("Extension type == null");
@@ -124,6 +127,10 @@ public class ExtensionLoader<T> {
         return loader;
     }
 
+    /**
+     * 创建类扩展器的时候，同时创建缺省的对象工厂（类似bean工厂）
+     * @param type
+     */
     private ExtensionLoader(Class<?> type) {
         this.type = type;
         objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
@@ -444,8 +451,13 @@ public class ExtensionLoader<T> {
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * 扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下type.getName()文件中所有实现类，获取对应type的缺省实现类
+     * 初始化缺省类的实现，放入缓存中并返回
+     */
     public T getAdaptiveExtension() {
         Object instance = cachedAdaptiveInstance.get();
+        // 缓存中为空，创建缺省的实例，这里存在并发，所以这里要加锁，双从检查锁定
         if (instance == null) {
             if(createAdaptiveInstanceError == null) {
                 synchronized (cachedAdaptiveInstance) {
@@ -453,6 +465,7 @@ public class ExtensionLoader<T> {
                     if (instance == null) {
                         try {
                             instance = createAdaptiveExtension();
+                            //把创建好的缺省实例放入缓存中
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
                             createAdaptiveInstanceError = t;
@@ -557,7 +570,7 @@ public class ExtensionLoader<T> {
 	        throw new IllegalStateException("No such extension \"" + name + "\" for " + type.getName() + "!");
 	    return clazz;
 	}
-	
+
 	private Map<String, Class<?>> getExtensionClasses() {
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
@@ -716,6 +729,10 @@ public class ExtensionLoader<T> {
     }
     
     @SuppressWarnings("unchecked")
+    /**
+     * 创建type缺省的实现
+     * 从objectFactory中获取值，初始化实例的属性（反射调用set方法）
+     */
     private T createAdaptiveExtension() {
         try {
             return injectExtension((T) getAdaptiveExtensionClass().newInstance());
@@ -723,8 +740,14 @@ public class ExtensionLoader<T> {
             throw new IllegalStateException("Can not create adaptive extenstion " + type + ", cause: " + e.getMessage(), e);
         }
     }
-    
+
+    /**
+     * 扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下type.getName()文件中所有实现类(包装类、缺省类、以及其他实现类)，
+     * 查找带有@Adaptive注解缺省class,若没有，自定义缺省class，否则直接返回
+     * @return
+     */
     private Class<?> getAdaptiveExtensionClass() {
+        //获取接口所有的实现类class
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
