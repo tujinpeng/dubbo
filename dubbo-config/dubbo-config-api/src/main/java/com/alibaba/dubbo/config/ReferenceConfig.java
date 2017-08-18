@@ -135,6 +135,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException("Already destroyed!");
         }
     	if (ref == null) {
+            //创建代理
     		init();
     	}
     	return ref;

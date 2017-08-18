@@ -318,6 +318,7 @@ public class ExtensionLoader<T> {
 		    cachedInstances.putIfAbsent(name, new Holder<Object>());
 		    holder = cachedInstances.get(name);
 		}
+        //双从检查锁定,线程安全的创建指定扩展实现
 		Object instance = holder.get();
 		if (instance == null) {
 		    synchronized (holder) {
@@ -452,8 +453,13 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     /**
-     * 扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下type.getName()文件中所有实现类，获取对应type的缺省实现类
-     * 初始化缺省类的实现，放入缓存中并返回
+     * 方法:获取type接口缺省的实现
+     * 1.扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下type.getName()文件中所有实现类(包装类、缺省类、以及其他实现类)，
+     * 2.找到类上有@Adaptive注解的实现类,若没有设置Adaptive注解的实现，则自定义实现(Protocol$Adpative)
+     *     自定义的实现有两个方法：
+     *         export（invoker）: 根据AbstractProxyInvoker的url里的protocol的值extName，调用ExtensionLoader.getExtensionLoader(type).getExtension(extName)获取指定的实现
+     *         refer(invoker):
+     * 3.初始化缺省类的实现，用包装类装饰,放入缓存中并返回
      */
     public T getAdaptiveExtension() {
         Object instance = cachedAdaptiveInstance.get();
@@ -509,17 +515,21 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
+        // 查找指定名字的扩展类,如dubbo=com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null) {
             throw findException(name);
         }
         try {
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
+            // 创建扩展类的实例
             if (instance == null) {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, (T) clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            // 初始化扩展类实例的set方法
             injectExtension(instance);
+            // wrap包装扩展类的实例
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
             if (wrapperClasses != null && wrapperClasses.size() > 0) {
                 for (Class<?> wrapperClass : wrapperClasses) {
@@ -571,6 +581,10 @@ public class ExtensionLoader<T> {
 	    return clazz;
 	}
 
+    /**
+     * 扫描工程下META-INF/services/，META-INF/dubbo/,META-INF/dubbo/internal/文件夹下type.getName()文件中所有实现类(包装类、缺省类、以及其他实现类)
+     * @return
+     */
 	private Map<String, Class<?>> getExtensionClasses() {
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
