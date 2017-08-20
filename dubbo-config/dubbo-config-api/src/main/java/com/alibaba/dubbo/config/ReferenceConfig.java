@@ -390,6 +390,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
 
             if (urls.size() == 1) {
+                /**
+                 * 引用远程的服务
+                 * 实际上调用RegistryProtocol.refer(),向注册中心订阅provider服务信息,返回FailoverClusterInvoker
+                 */
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
@@ -424,6 +428,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
         }
         // 创建服务代理
+        // 这里的proxyFactory缺省的实现是JavassistProxyFactory
+        // 创建动态代理,用InvokerInvocationHandler实现增强
         return (T) proxyFactory.getProxy(invoker);
     }
 
