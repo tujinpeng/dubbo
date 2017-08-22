@@ -257,7 +257,12 @@ public class DubboProtocol extends AbstractProtocol {
         
         return exporter;
     }
-    
+
+    /**
+     * 开启底层通信服务器端
+     * 将开启的server放入缓存,key为暴露服务ip+port,防止重复启动server,保持幂等性
+     * @param url
+     */
     private void openServer(URL url) {
         // find server.
         String key = url.getAddress();
