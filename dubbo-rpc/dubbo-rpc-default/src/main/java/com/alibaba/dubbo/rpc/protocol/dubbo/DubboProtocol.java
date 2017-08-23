@@ -51,7 +51,9 @@ import com.alibaba.dubbo.rpc.protocol.AbstractProtocol;
 
 /**
  * dubbo protocol support.
- *
+ * 职责：
+ *  1.dubbo Protocol是个服务域，负责invoker的暴露和引用
+ *  2.负责开启socket通信的server和client，兼职rpc调用发送和应答
  * @author qian.lei
  * @author william.liangf
  * @author chao.liuc

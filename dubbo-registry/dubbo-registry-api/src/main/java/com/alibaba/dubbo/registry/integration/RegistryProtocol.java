@@ -101,15 +101,22 @@ public class RegistryProtocol implements Protocol {
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
-    
+
+    /**
+     * provider service暴露服务
+     * @param originInvoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        //export invoker
+        // 1.向protocol export invoker
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
-        //registry provider
+        // 2.向注册中心注册provider URL
         final Registry registry = getRegistry(originInvoker);
-        final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
+        final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);//去除monitor配置
         registry.register(registedProviderUrl);
-        // 订阅override数据
+        // 3.订阅注册中心上provider节点变更事件，事件触发重新向protocol export invoker ，override数据(see dubbo-cache动态配置)
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
