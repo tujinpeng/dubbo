@@ -22,12 +22,17 @@ import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.RpcInvocation;
 
 /**
+ * 消费者服务代理增强
  * InvokerHandler
  * 
  * @author william.liangf
  */
 public class InvokerInvocationHandler implements InvocationHandler {
 
+    /**
+     * 这里的invoker是FailoverClusterInvoker
+     * see com.alibaba.dubbo.rpc.Protocol#refer(java.lang.Class, com.alibaba.dubbo.common.URL)
+     */
     private final Invoker<?> invoker;
     
     public InvokerInvocationHandler(Invoker<?> handler){

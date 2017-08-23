@@ -498,7 +498,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         /**
                          * 真正暴露服务的地方：
                          * 1。这里的protocol是一个自定义的适配对象由ExtensionLoader扩展点框架负责生成，有两个方法：
-                         *      export（invoker）: 根据AbstractProxyInvoker的url里的protocol的值extName，调用ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName)获取包装的协议对象
+                         *      export（invoker）: 根据AbstractProxyInvoker的url里的protocol的值extName，调用ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName)获取指定的包装的协议对象
                          *      refer(invoker):
                          * 2.protocol包装的结果（装饰器模式  ProtocolFilterWrapper->ProtocolListenerWrapper->RegistryProtocol-->ProtocolFilterWrapper->ProtocolListenerWrapper->DubboProtocol）
                          * 3.RegistryProtocol负责将服务url注册到注册中心中;

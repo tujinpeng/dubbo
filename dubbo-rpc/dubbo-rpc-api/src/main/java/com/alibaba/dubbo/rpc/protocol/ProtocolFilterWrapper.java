@@ -29,8 +29,8 @@ import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcException;
 
 /**
- * ListenerProtocol
- * 
+ * protocol filter包装
+ *
  * @author william.liangf
  */
 public class ProtocolFilterWrapper implements Protocol {
@@ -52,6 +52,7 @@ public class ProtocolFilterWrapper implements Protocol {
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        // 获取provider分组的扩展filters,构建本地调用invoker的调用链
         return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
     }
 
@@ -66,13 +67,26 @@ public class ProtocolFilterWrapper implements Protocol {
         protocol.destroy();
     }
 
+    /**
+     * 构建本地调用invoker的chain
+     * @param invoker
+     * @param key
+     * @param group
+     * @param <T>
+     * @return
+     */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
+        // 先设置调用链head为本地invoker
         Invoker<T> last = invoker;
+        // 获取指定分组的所有filter的实例
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
         if (filters.size() > 0) {
             for (int i = filters.size() - 1; i >= 0; i --) {
                 final Filter filter = filters.get(i);
+                // 将上一个节点暂存
                 final Invoker<T> next = last;
+                // 新建下个invoker,将上一个invoker引用传入新建invoker方法中
+                // 保证每个invoker调用invoker时,持有上一个invoker,形成链表(头为原始的本地调用invoker)
                 last = new Invoker<T>() {
 
                     public Class<T> getInterface() {
@@ -88,6 +102,7 @@ public class ProtocolFilterWrapper implements Protocol {
                     }
 
                     public Result invoke(Invocation invocation) throws RpcException {
+                        //用filter增强的invoker.invoke()
                         return filter.invoke(next, invocation);
                     }
 
@@ -102,7 +117,7 @@ public class ProtocolFilterWrapper implements Protocol {
                 };
             }
         }
-        return last;
+        return last;//调用链执行从尾部invoker--》头部本地invoker
     }
     
 }
