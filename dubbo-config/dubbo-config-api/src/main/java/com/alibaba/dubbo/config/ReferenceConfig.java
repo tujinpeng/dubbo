@@ -429,7 +429,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         // 创建服务代理
         // 这里的proxyFactory缺省的实现是JavassistProxyFactory
-        // 创建动态代理,用InvokerInvocationHandler实现增强
+        // 创建动态代理,用InvokerInvocationHandler实现增强,
+        // 这里的invoker返回的是MockClusterInvoker->FailoverClusterInvoker
         return (T) proxyFactory.getProxy(invoker);
     }
 
