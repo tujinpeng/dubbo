@@ -229,6 +229,16 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+    /**
+     *
+     * 项目启动时,提供方服务provider暴露服务export最终调用:
+     * 1.将提供方的调用invoker注册到dubboProtocol的exportMap中
+     * 2.开启提供方的机器socketServer,绑定端口号监听消费方accept请求
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         URL url = invoker.getUrl();
         
@@ -308,6 +318,16 @@ public class DubboProtocol extends AbstractProtocol {
         return server;
     }
 
+    /**
+     * 项目启动时,消费方机器接受到注册中心下发的服务方注册启动成功的消息,refer的最终调用:
+     * 1.开启连接远程的socketClient,一个远程服务方地址对应一个client
+     * 2.返回包装的DubboInvoker
+     * @param serviceType
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);

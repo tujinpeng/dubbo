@@ -30,7 +30,10 @@ import com.alibaba.dubbo.rpc.RpcInvocation;
 public class InvokerInvocationHandler implements InvocationHandler {
 
     /**
-     * 这里的invoker是FailoverClusterInvoker
+     * invoker是一个包装wrap对象,包装顺序:
+     *
+     *   MockInvoker(服务降级)--》FailoverClusterInvoker(集群容错)--》消费者filters(调用链)--》dubboInvoker(发起远程调用)
+     *
      * see com.alibaba.dubbo.rpc.Protocol#refer(java.lang.Class, com.alibaba.dubbo.common.URL)
      */
     private final Invoker<?> invoker;

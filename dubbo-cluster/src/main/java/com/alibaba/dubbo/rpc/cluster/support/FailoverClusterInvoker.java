@@ -34,8 +34,9 @@ import com.alibaba.dubbo.rpc.cluster.Directory;
 import com.alibaba.dubbo.rpc.cluster.LoadBalance;
 
 /**
+ * 集群容错:
+ *
  * 失败转移，当出现失败，重试其它服务器，通常用于读操作，但重试会带来更长延迟。
- * 
  * <a href="http://en.wikipedia.org/wiki/Failover">Failover</a>
  * 
  * @author william.liangf
@@ -50,8 +51,17 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
+    /**
+     * 通过传入的会话,所有provider的invokers,负载均衡器,决定consumer的最终调用:
+     * 调用规则:
+     *      通过负载均衡策略(随机)从provider的invoker list中选出一个invoker,发起远程调用
+     *      若失败则根据URL中retries参数配置重试
+     */
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
     	List<Invoker<T>> copyinvokers = invokers;
+        /**
+         * 1.检查provider invokers是否为空
+         */
     	checkInvokers(copyinvokers, invocation);
         int len = getUrl().getMethodParameter(invocation.getMethodName(), Constants.RETRIES_KEY, Constants.DEFAULT_RETRIES) + 1;
         if (len <= 0) {
@@ -59,8 +69,12 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         }
         // retry loop.
         RpcException le = null; // last exception.
+        //声明调用过的invoker list
         List<Invoker<T>> invoked = new ArrayList<Invoker<T>>(copyinvokers.size()); // invoked invokers.
         Set<String> providers = new HashSet<String>(len);
+        /**
+         * 2.用负载均衡器选择一个invoker发起远程调用,失败重试
+         */
         for (int i = 0; i < len; i++) {
         	//重试时，进行重新选择，避免重试时invoker列表已发生变化.
         	//注意：如果列表发生了变化，那么invoked判断会失效，因为invoker示例已经改变
@@ -70,10 +84,12 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         		//重新检查一下
         		checkInvokers(copyinvokers, invocation);
         	}
+            //负载均衡,选出最终要调用的provider invoker
             Invoker<T> invoker = select(loadbalance, invocation, copyinvokers, invoked);
             invoked.add(invoker);
             RpcContext.getContext().setInvokers((List)invoked);
             try {
+                //发起远程调用(若是dubbo协议最终调用dubboInvoker发起远程调用)
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + invocation.getMethodName()

@@ -212,11 +212,14 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
     
     public Result invoke(final Invocation invocation) throws RpcException {
 
+        //1.检查invoker是否被销毁
         checkWhetherDestroyed();
 
         LoadBalance loadbalance;
-        
+
+        //2.从registryDirectory中获取所有服务provider的invokerList、负载均衡策略
         List<Invoker<T>> invokers = list(invocation);
+        //获取负载均衡策略,默认随机调用
         if (invokers != null && invokers.size() > 0) {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(0).getUrl()
                     .getMethodParameter(invocation.getMethodName(),Constants.LOADBALANCE_KEY, Constants.DEFAULT_LOADBALANCE));
@@ -224,6 +227,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        //3.将会话invocation,provider调用invokerList,负载均衡策略传入子类,决定最终的服务调用
         return doInvoke(invocation, invokers, loadbalance);
     }
 

@@ -32,6 +32,7 @@ import com.alibaba.dubbo.rpc.cluster.Directory;
 import com.alibaba.dubbo.rpc.support.MockInvoker;
 
 /**
+ * 服务降级invoker 屏蔽不重要的服务不可用时对消费方的影响
  * @author chao.liuc
  */
 public class MockClusterInvoker<T> implements Invoker<T>{
@@ -65,19 +66,27 @@ public class MockClusterInvoker<T> implements Invoker<T>{
 
 	public Result invoke(Invocation invocation) throws RpcException {
 		Result result = null;
-        
-        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(), Constants.MOCK_KEY, Boolean.FALSE.toString()).trim(); 
+
+        /**
+		 * 获取服务URL配置里mock降级规则:
+		 * (1)mock=force:return+null ----》消费方发起远程调用时,直接返回null,不发起远程调用
+		 * (2)mock=fail:return+null  ----》消费者发起远程调用失败时,直接返回空,不抛异常
+		 */
+        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(), Constants.MOCK_KEY, Boolean.FALSE.toString()).trim();
         if (value.length() == 0 || value.equalsIgnoreCase("false")){
         	//no mock
+			//没有mock规则,正常调用
         	result = this.invoker.invoke(invocation);
         } else if (value.startsWith("force")) {
         	if (logger.isWarnEnabled()) {
         		logger.info("force-mock: " + invocation.getMethodName() + " force-mock enabled , url : " +  directory.getUrl());
         	}
         	//force:direct mock
+			//有mock规则:mock=force:return+null,直接返回null
         	result = doMockInvoke(invocation, null);
         } else {
         	//fail-mock
+			//有mock规则:mock=fail:return+null,远程调用失败后在返回null
         	try {
         		result = this.invoker.invoke(invocation);
         	}catch (RpcException e) {

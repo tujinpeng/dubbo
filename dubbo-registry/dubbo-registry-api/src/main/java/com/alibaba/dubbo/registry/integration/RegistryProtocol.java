@@ -242,6 +242,9 @@ public class RegistryProtocol implements Protocol {
     }
     
     @SuppressWarnings("unchecked")
+    /**
+     * 项目启动时,consumer引用远程服务过程
+     */
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
         Registry registry = registryFactory.getRegistry(url);
@@ -266,6 +269,7 @@ public class RegistryProtocol implements Protocol {
     }
     
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        //1.向注册心中注册服务的消费者方URL
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
@@ -275,10 +279,12 @@ public class RegistryProtocol implements Protocol {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+        //2.向注册中心订阅服务提供方节点变更通知 通知RegistryDirectory 将提供方的信息保存下来
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 
                 + "," + Constants.CONFIGURATORS_CATEGORY 
                 + "," + Constants.ROUTERS_CATEGORY));
+        //3.用MockClusterInvoker包装消费方远程调用invoker(用于服务降级),同时组合存储服务提供方信息的RegistryDirectory对象
         return cluster.join(directory);
     }
 

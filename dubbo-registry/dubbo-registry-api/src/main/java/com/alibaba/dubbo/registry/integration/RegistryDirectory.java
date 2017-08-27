@@ -54,6 +54,8 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
 
 /**
  * RegistryDirectory
+ *
+ * 存储服务提供方信息 订阅注册中心提供方URL变更 构建消费方invoker的调用链
  * 
  * @author william.liangf
  * @author chao.liuc
@@ -96,9 +98,16 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private volatile List<Configurator> configurators; // 初始为null以及中途可能被赋为null，请使用局部变量引用
     
     // Map<url, Invoker> cache service url to invoker mapping.
+    /**
+     * provider URL-->provider invoker映射
+     */
     private volatile Map<String, Invoker<T>> urlInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
     
     // Map<methodName, Invoker> cache service method to invokers mapping.
+    /**
+     * 方法名-》所有provider的invoker映射
+     * 方便consumer引用远程服务时,通过方法名找到所有provider的调用invoker
+     */
     private volatile Map<String, List<Invoker<T>>> methodInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
     
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
@@ -392,6 +401,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 		enabled = url.getParameter(Constants.ENABLED_KEY, true);
                 	}
                 	if (enabled) {
+                        /**
+                         * 构建消费方invoker调用链,最终会调用到协议方的refer方法(例如DubboProtocol.refer)
+                         */
                 		invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
                 	}
                 } catch (Throwable t) {
