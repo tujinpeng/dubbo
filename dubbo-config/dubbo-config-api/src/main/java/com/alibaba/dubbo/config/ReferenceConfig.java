@@ -391,8 +391,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
             if (urls.size() == 1) {
                 /**
-                 * 引用远程的服务
-                 * 实际上调用RegistryProtocol.refer(),向注册中心订阅provider服务信息,返回FailoverClusterInvoker
+                 * (1)带有注册中心的引用:
+                 *      实际上调用RegistryProtocol.refer(),向注册中心订阅provider服务信息,返回FailoverClusterInvoker
+                 * (2)直连引用:
+                 *      直接调用DubboProtocol.refer(),开启client连接,返回dubboInvoker
+                 *
                  */
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             } else {
