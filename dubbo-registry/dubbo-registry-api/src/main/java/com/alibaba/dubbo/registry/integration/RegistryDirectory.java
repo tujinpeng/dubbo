@@ -55,7 +55,9 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
 /**
  * RegistryDirectory
  *
- * 存储服务提供方信息 订阅注册中心提供方URL变更 构建消费方invoker的调用链
+ * 订阅注册中心提供方URL变更
+ * 存储方法和服务提供方invoker映射
+ * 构建消费方invoker的调用链(最终调用到DubboInvoker,创建client,连接远程server)
  * 
  * @author william.liangf
  * @author chao.liuc
