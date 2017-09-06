@@ -36,8 +36,8 @@ import com.alibaba.dubbo.rpc.protocol.AbstractInvoker;
 import com.alibaba.dubbo.rpc.support.RpcUtils;
 
 /**
- * DubboInvoker
- * 
+ * DubboInvoker(客户端发起远程调用的invoker)
+ *
  * @author william.liangf
  * @author chao.liuc
  */
@@ -66,6 +66,9 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
     }
 
     @Override
+    /**
+     * 发起远程调用（异步或者同步）
+     */
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;
         final String methodName = RpcUtils.getMethodName(invocation);
@@ -87,12 +90,21 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                 currentClient.send(inv, isSent);
                 RpcContext.getContext().setFuture(null);
                 return new RpcResult();
-            } else if (isAsync) {
+            } else if (isAsync) {//异步调用 see futureFilter
             	ResponseFuture future = currentClient.request(inv, timeout) ;
                 RpcContext.getContext().setFuture(new FutureAdapter<Object>(future));
                 return new RpcResult();
-            } else {
+            } else {//同步调用
             	RpcContext.getContext().setFuture(null);
+                /**
+                 * 客户端client发送远程请求 超时等待
+                 * 超时等待机制：
+                 *   client发起远程每调用request,会原子的创建一个唯一id(mId),作为关联一次调用的request和response；
+                 *
+                 *   (1)client向server发起远程调用，先返回defaultFuture，在调用get()会阻塞当前线程，线程进入超时等待状态，等待server返回的response结果。
+                 *   (2)若在超时时间内server响应返回response,通过调用DefaultFuture.received(),根据response中mid找出对应的future，唤醒signal它，返回调用结果；
+                 *   (3)若远程调用超时了，此事有个DubboResponseTimeoutScanTimer超时扫描的定时线程，找到超时的future，创建timeoutResponse唤醒通知future，返回超时异常结果
+                 */
                 return (Result) currentClient.request(inv, timeout).get();
             }
         } catch (TimeoutException e) {
