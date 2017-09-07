@@ -37,6 +37,12 @@ import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
  * DefaultFuture.
+ *
+ * 客户端发起一次远程请求的预期结果（requestId--->future）:
+ * 工作原理：
+ * (1) 客户端发起远程调用，立马返回一个defaultFuture，同时调用get()，客户端线程进入超时等待状态，等待服务器端响应.
+ * (2) 若服务器端在超时时间内返回响应，则调用DefaultFuture.received(Channel,Response)通过requestId找到对应的defaultFuturet，通知唤醒等待的客户端线程（此时有response），客户端线程返回最终调用结果；
+ * (3) 若服务器端超时响应了，会有一个dubbo线程(DubboResponseTimeoutScanTimer)定时扫描超时的future，生成一个超时的timeoutResponse,调用DefaultFuture.received(Channel,timeoutResponse),通知唤醒等待的客户端线程，客户端返回超时异常
  * 
  * @author qian.lei
  * @author chao.liuc
@@ -47,6 +53,9 @@ public class DefaultFuture implements ResponseFuture {
 
     private static final Map<Long, Channel>       CHANNELS   = new ConcurrentHashMap<Long, Channel>();
 
+    /**
+     * 存放请求id和预期结果future的映射
+     */
     private static final Map<Long, DefaultFuture> FUTURES   = new ConcurrentHashMap<Long, DefaultFuture>();
 
     // invoke id.
@@ -79,22 +88,29 @@ public class DefaultFuture implements ResponseFuture {
         FUTURES.put(id, this);
         CHANNELS.put(id, channel);
     }
-    
+
+    /**
+     * 当客户端发起请求时，调用对应future的get()方法进行超时等待响应
+     * @return
+     * @throws RemotingException
+     */
     public Object get() throws RemotingException {
         return get(timeout);
     }
 
     public Object get(int timeout) throws RemotingException {
         if (timeout <= 0) {
+            //设置默认超时时间
             timeout = Constants.DEFAULT_TIMEOUT;
         }
+        //1.若此时还没有返回response，消费者线程则进入超时等待过程
         if (! isDone()) {
             long start = System.currentTimeMillis();
-            lock.lock();
+            lock.lock();//对future的response访问又竞争 因此要加可重入锁
             try {
                 while (! isDone()) {
-                    done.await(timeout, TimeUnit.MILLISECONDS);
-                    if (isDone() || System.currentTimeMillis() - start > timeout) {
+                    done.await(timeout, TimeUnit.MILLISECONDS);//超时等待 当服务器端返回response时，调用DefaultFuture.received()唤醒这里
+                    if (isDone() || System.currentTimeMillis() - start > timeout) {//有返回或者超时了，结束等待
                         break;
                     }
                 }
@@ -103,10 +119,12 @@ public class DefaultFuture implements ResponseFuture {
             } finally {
                 lock.unlock();
             }
+            //客户端线程结束超时等待，若还没有响应(可能超时检查线程没有扫描到)，此时可判定为超时，客户端线程直接返回超时异常
             if (! isDone()) {
                 throw new TimeoutException(sent > 0, channel, getTimeoutMessage(false));
             }
         }
+        // 2.消费者线程结束等待 ，判断若是超时返回的直接抛异常；正常返回的，直接返回调用结果
         return returnFromResponse();
     }
     
@@ -233,8 +251,14 @@ public class DefaultFuture implements ResponseFuture {
         sent = System.currentTimeMillis();
     }
 
+    /**
+     * 服务器端返回时或者超时检查线程扫描到超时future会调用，通知等待的future有response
+     * @param channel
+     * @param response
+     */
     public static void received(Channel channel, Response response) {
         try {
+            //request和response通过mid关联,可以通过id找到对应的future
             DefaultFuture future = FUTURES.remove(response.getId());
             if (future != null) {
                 future.doReceived(response);
@@ -278,6 +302,9 @@ public class DefaultFuture implements ResponseFuture {
                     + " -> " + channel.getRemoteAddress();
     }
 
+    /**
+     * 检查调用超时的定时线程
+     */
     private static class RemotingInvocationTimeoutScan implements Runnable {
 
         public void run() {
@@ -287,13 +314,16 @@ public class DefaultFuture implements ResponseFuture {
                         if (future == null || future.isDone()) {
                             continue;
                         }
+                        //检测到furure超时
                         if (System.currentTimeMillis() - future.getStartTimestamp() > future.getTimeout()) {
+                            //创建一个具有相同id的超时response
                             // create exception response.
                             Response timeoutResponse = new Response(future.getId());
                             // set timeout status.
                             timeoutResponse.setStatus(future.isSent() ? Response.SERVER_TIMEOUT : Response.CLIENT_TIMEOUT);
                             timeoutResponse.setErrorMessage(future.getTimeoutMessage(true));
                             // handle response.
+                            //通知等待的future
                             DefaultFuture.received(future.getChannel(), timeoutResponse);
                         }
                     }
