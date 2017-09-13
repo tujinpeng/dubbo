@@ -29,6 +29,8 @@ import com.alibaba.dubbo.remoting.exchange.ExchangeHandler;
 import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
+ *
+ * ExchangeClient包装类 统计客户端调用次数
  * dubbo protocol support class.
  * 
  * @author chao.liuc

@@ -36,6 +36,7 @@ import com.alibaba.dubbo.remoting.exchange.ResponseCallback;
 import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
+ * <pre>
  * DefaultFuture.
  *
  * 客户端发起一次远程请求的预期结果（requestId--->future）:
@@ -43,7 +44,7 @@ import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
  * (1) 客户端发起远程调用，立马返回一个defaultFuture，同时调用get()，客户端线程进入超时等待状态，等待服务器端响应.
  * (2) 若服务器端在超时时间内返回响应，则调用DefaultFuture.received(Channel,Response)通过requestId找到对应的defaultFuturet，通知唤醒等待的客户端线程（此时有response），客户端线程返回最终调用结果；
  * (3) 若服务器端超时响应了，会有一个dubbo线程(DubboResponseTimeoutScanTimer)定时扫描超时的future，生成一个超时的timeoutResponse,调用DefaultFuture.received(Channel,timeoutResponse),通知唤醒等待的客户端线程，客户端返回超时异常
- * 
+ * </pre>
  * @author qian.lei
  * @author chao.liuc
  */

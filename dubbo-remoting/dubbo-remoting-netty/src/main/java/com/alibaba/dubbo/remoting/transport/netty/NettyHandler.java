@@ -32,8 +32,15 @@ import com.alibaba.dubbo.remoting.Channel;
 import com.alibaba.dubbo.remoting.ChannelHandler;
 
 /**
- * NettyHandler
- * 
+ * <pre>
+ * NettyHandler :
+ * (1)Netty事件传播处理器,监听客户端连接,关闭连接,读写,异常事件;
+ * (2)主要是将netty事件转发到dubbo自定义的ChannelHandler调用链中:
+ *
+ *      NettyHandler(netty事件转发handler)->MultiMessageHandler(多消息批处理handler)->HeartbeatHandler(心跳消息处理handler)->
+ *      AllChannelHandler(线程池消息分发handler)->HeaderExchangeHandler(request-Response信息交换handler)->DubboProtocol.requestHandler
+ *
+ * </pre>
  * @author william.liangf
  */
 @Sharable

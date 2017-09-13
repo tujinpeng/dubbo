@@ -26,6 +26,14 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.ChannelEventRunnable;
 import com.alibaba.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
 import com.alibaba.dubbo.remoting.transport.dispatcher.ChannelEventRunnable.ChannelState;
 
+/**
+ * <pre>
+ *     线程池消息分发handler:
+ *     (1)持有默认200大小的fixed线程池
+ *     (2)将连接事件、关闭连接事件、客户端接收服务端响应、服务端接收客户端请求、异常处理事件投递到dubbo线程池中异步处理
+ *     (3)建议使用MessageOnlyChannelHandler(只处理读事件)
+ * </pre>
+ */
 public class AllChannelHandler extends WrappedChannelHandler {
     
     public AllChannelHandler(ChannelHandler handler, URL url) {

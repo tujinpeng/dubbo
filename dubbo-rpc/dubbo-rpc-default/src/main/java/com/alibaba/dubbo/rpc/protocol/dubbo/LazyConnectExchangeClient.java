@@ -34,7 +34,12 @@ import com.alibaba.dubbo.remoting.exchange.Exchangers;
 import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
+ * <pre>
+ * ExchangeClient包装类:
+ *     *当客户端服务第一次发起调用时,开启底层通信传输的客户端(例如netty mina Grizzly)
+ *     *创建HeaderExchangeClient
  * dubbo protocol support class.
+ * </pre>
  * 
  * @author chao.liuc
  */

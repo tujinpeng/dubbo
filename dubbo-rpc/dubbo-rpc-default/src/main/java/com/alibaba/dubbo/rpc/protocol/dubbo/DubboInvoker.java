@@ -97,13 +97,16 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             } else {//同步调用
             	RpcContext.getContext().setFuture(null);
                 /**
-                 * 客户端client发送远程请求 超时等待
+                 * 客户端装饰client发送远程请求(超时等待)
                  * 1.调用过程：
-                 *      ReferenceCountExchangeClient(统计调用次数)->LazyConnectExchangeClient(开启客户端与服务器端的连接)
-                 *      ->HeaderExchangeClient(开启客户端心跳定时器)->HeaderExchangeChannel(请求对象封装，返回异步请求结果DefaultFuture)
-                 *      ->NettyChannel(调用jboss的channel.write写消息)
-                 *      ->MultiMessageHandler(跳过)->HeartbeatHandler(记录channel最后一次写时间)->AllChannelHandler(跳过)->DecodeHandler(跳过)->HeaderExchangeHandler(记录future的sent时间)
-                 *      ->发送消息到服务器端
+                 *      [client]    ReferenceCountExchangeClient(统计次数的client)->LazyConnectExchangeClient(开启连接的client)->HeaderExchangeClient(默认消息发送的client,开启客户端心跳定时器)->
+                 *          |
+                 *          v
+                 *      [channel]   HeaderExchangeChannel(请求对象封装channel，返回异步请求结果DefaultFuture)->NettyChannel(jboss的channel)->
+                 *          |
+                 *          v
+                 *      [handler]   NettyHandler(存储channel信息的handler)->MultiMessageHandler(跳过)->HeartbeatHandler(心跳消息处理handler)->AllChannelHandler(线程池任务分发handler,跳过)->DecodeHandler(跳过)->HeaderExchangeHandler(记录future的sent时间handler)
+                 *
                  * 2.超时等待机制：
                  *   client发起远程每调用request,会原子的创建一个唯一id(mId),作为关联一次调用的request和response；
                  *   (1)client向server发起远程调用，先返回defaultFuture，在调用get()会阻塞当前线程，线程进入超时等待状态，等待server返回的response结果。

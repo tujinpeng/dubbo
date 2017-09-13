@@ -27,6 +27,7 @@ import com.alibaba.dubbo.remoting.exchange.Response;
 import com.alibaba.dubbo.remoting.transport.AbstractChannelHandlerDelegate;
 
 /**
+ * 心跳消息处理handler 监听连接,读写事件
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  */
 public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
@@ -41,23 +42,46 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
         super(handler);
     }
 
+    /**
+     * 客户端发起连接事件,记录channel最新的读写时间戳
+     * @param channel
+     * @throws RemotingException
+     */
     public void connected(Channel channel) throws RemotingException {
         setReadTimestamp(channel);
         setWriteTimestamp(channel);
         handler.connected(channel);
     }
 
+    /**
+     * 客户端发起关闭连接事件,记录channel最新的读写时间戳
+     * @param channel
+     * @throws RemotingException
+     */
     public void disconnected(Channel channel) throws RemotingException {
         clearReadTimestamp(channel);
         clearWriteTimestamp(channel);
         handler.disconnected(channel);
     }
 
+    /**
+     * 客户端发送消息或者服务器端返回结果给客户端:记录channel的最新的写时间戳
+     * @param channel
+     * @param message
+     * @throws RemotingException
+     */
     public void sent(Channel channel, Object message) throws RemotingException {
         setWriteTimestamp(channel);
         handler.sent(channel, message);
     }
 
+    /**
+     * 服务器端接收到心跳消息时:发送响应response反馈给客户端
+     * 客户端接收到服务器端返回的responses时:打印客户端Receive heartbeat日志
+     * @param channel
+     * @param message
+     * @throws RemotingException
+     */
     public void received(Channel channel, Object message) throws RemotingException {
         setReadTimestamp(channel);
         if (isHeartbeatRequest(message)) {

@@ -35,8 +35,10 @@ import com.alibaba.dubbo.remoting.exchange.support.DefaultFuture;
 import com.alibaba.dubbo.remoting.transport.ChannelHandlerDelegate;
 
 /**
- * ExchangeReceiver
- * 
+ * <pre>
+ * ExchangeReceiver:
+ * request-Response信息交换handler
+ * </pre>
  * @author william.liangf
  * @author chao.liuc
  */
@@ -119,6 +121,12 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /**
+     * sent:客户端请求或者服务端响应
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     public void sent(Channel channel, Object message) throws RemotingException {
         Throwable exception = null;
         try {
@@ -156,10 +164,17 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
 
+    /**
+     * 服务器端接收到客户端请求处理,客户端接受到服务端响应
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     public void received(Channel channel, Object message) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         try {
+            //(1)服务器端接收到客户端请求
             if (message instanceof Request) {
                 // handle request.
                 Request request = (Request) message;
@@ -167,13 +182,17 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     handlerEvent(channel, request);
                 } else {
                     if (request.isTwoWay()) {
+                        //服务器端接受到客户端请求request,调用提供方的invoker服务,返回response
                         Response response = handleRequest(exchangeChannel, request);
+                        //将response结果发送回客户端
                         channel.send(response);
                     } else {
                         handler.received(exchangeChannel, request.getData());
                     }
                 }
             } else if (message instanceof Response) {
+                //(2)客户端接收到服务器端响应response处理
+                //通知在客户端等待的future
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) {
                 if (isClientSide(channel)) {

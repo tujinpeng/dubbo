@@ -37,8 +37,19 @@ import com.alibaba.dubbo.remoting.exchange.ExchangeHandler;
 import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
+ * <pre>
  * DefaultMessageClient
- * 
+ * 默认客户端发送请求的客户端:
+ *
+ * (1)职责:
+ *      负责开启心跳定时器,负责调用底层的通信channel
+ * (2)心跳机制:
+ *       * client创建时就开启心跳定时器线程("dubbo-remoting-client-heartbeat")
+ *       * 心跳线程检查:
+ *          当客户端最后一次读写时间距现在超过心跳时间的heartbeat(默认60s),发送心跳请求给服务器端;
+ *          当客户端最后一次读时间距现在时间超过心跳超时时间的heartbeatTimeout(默认60*3s),表示客户端很久没有接收到服务器端响应了,可能连接断开了,此时客户端重新连接。
+ *       * 每次客户单发起远程调用时,都会经过HeaderExchangeHandler记录最后一次的读写时间
+ * </pre>
  * @author william.liangf
  * @author chao.liuc
  */
@@ -55,7 +66,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     private int heartbeat;
 
     private int heartbeatTimeout;
-    
+
     private final Client client;
 
     private final ExchangeChannel channel;
@@ -106,11 +117,11 @@ public class HeaderExchangeClient implements ExchangeClient {
     public ExchangeHandler getExchangeHandler() {
         return channel.getExchangeHandler();
     }
-    
+
     public void send(Object message) throws RemotingException {
         channel.send(message);
     }
-    
+
     public void send(Object message, boolean sent) throws RemotingException {
         channel.send(message, sent);
     }
@@ -132,7 +143,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     public void reset(URL url) {
         client.reset(url);
     }
-    
+
     @Deprecated
     public void reset(com.alibaba.dubbo.common.Parameters parameters){
         reset(getUrl().addParameters(parameters.getParameters()));
