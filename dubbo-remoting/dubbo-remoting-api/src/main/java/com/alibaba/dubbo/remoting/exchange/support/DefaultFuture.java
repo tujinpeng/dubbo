@@ -253,7 +253,7 @@ public class DefaultFuture implements ResponseFuture {
     }
 
     /**
-     * 服务器端返回时或者超时检查线程扫描到超时future会调用，通知等待的future有response
+     * 客户端接收到服务端返回时或者超时检查线程扫描到超时future会调用，通知等待的future有response
      * @param channel
      * @param response
      */
@@ -317,10 +317,11 @@ public class DefaultFuture implements ResponseFuture {
                         }
                         //检测到furure超时
                         if (System.currentTimeMillis() - future.getStartTimestamp() > future.getTimeout()) {
-                            //创建一个具有相同id的超时response
+                            //创建一个具有相同requestId的超时response
                             // create exception response.
                             Response timeoutResponse = new Response(future.getId());
                             // set timeout status.
+                            // 设置超时状态(若此时future对应请求还没有发送给服务端，则判定为客户端超时否则服务端超时)
                             timeoutResponse.setStatus(future.isSent() ? Response.SERVER_TIMEOUT : Response.CLIENT_TIMEOUT);
                             timeoutResponse.setErrorMessage(future.getTimeoutMessage(true));
                             // handle response.

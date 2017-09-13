@@ -105,7 +105,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                  *      [channel]   HeaderExchangeChannel(请求对象封装channel，返回异步请求结果DefaultFuture)->NettyChannel(jboss的channel)->
                  *          |
                  *          v
-                 *      [handler]   NettyHandler(存储channel信息的handler)->MultiMessageHandler(跳过)->HeartbeatHandler(心跳消息处理handler)->AllChannelHandler(线程池任务分发handler,跳过)->DecodeHandler(跳过)->HeaderExchangeHandler(记录future的sent时间handler)
+                 *      [handler]   NettyHandler(存储channel信息的handler)->MultiMessageHandler(跳过)->HeartbeatHandler(心跳消息处理handler)->AllChannelHandler(线程池任务分发handler,跳过)->DecodeHandler(跳过)->HeaderExchangeHandler(信息交换handler)
                  *
                  * 2.超时等待机制：
                  *   client发起远程每调用request,会原子的创建一个唯一id(mId),作为关联一次调用的request和response；

@@ -65,7 +65,9 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    // 提供方处理消费方请求
     Response handleRequest(ExchangeChannel channel, Request req) throws RemotingException {
+        //创建要返回的response（和request具有相同的id，request、response一一对应）
         Response res = new Response(req.getId(), req.getVersion());
         if (req.isBroken()) {
             Object data = req.getData();
@@ -80,9 +82,11 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             return res;
         }
         // find handler by message class.
+        // 获取消费方调用的service会话invocation
         Object msg = req.getData();
         try {
             // handle data.
+            //调用注册在dubboProtocol上的invoker链，返回结果
             Object result = handler.reply(channel, msg);
             res.setStatus(Response.OK);
             res.setResult(result);
@@ -133,6 +137,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
             ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
             try {
+                //sent事件向下传播
                 handler.sent(exchangeChannel, message);
             } finally {
                 HeaderExchangeChannel.removeChannelIfDisconnected(channel);
@@ -140,6 +145,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         } catch (Throwable t) {
             exception = t;
         }
+        //若是客户端请求sent 记录请求对应的future的发送时间
         if (message instanceof Request) {
             Request request = (Request) message;
             DefaultFuture.sent(channel, request);
