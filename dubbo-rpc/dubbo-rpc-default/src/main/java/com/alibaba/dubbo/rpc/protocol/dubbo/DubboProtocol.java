@@ -83,8 +83,10 @@ public class DubboProtocol extends AbstractProtocol {
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
         
         public Object reply(ExchangeChannel channel, Object message) throws RemotingException {
+            //接收客户端请求,这里作服务端应答
             if (message instanceof Invocation) {
                 Invocation inv = (Invocation) message;
+                //通过service+port作为key,从注册在协议上的找到对应的服务invoker调用链
                 Invoker<?> invoker = getInvoker(channel, inv);
                 //如果是callback 需要处理高版本调用低版本的问题
                 if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))){
@@ -107,6 +109,7 @@ public class DubboProtocol extends AbstractProtocol {
                     }
                 }
                 RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
+                //执行服务的invoker调用链
                 return invoker.invoke(inv);
             }
             throw new RemotingException(channel, "Unsupported request: " + message == null ? null : (message.getClass().getName() + ": " + message) + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
